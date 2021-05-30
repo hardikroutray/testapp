@@ -40,11 +40,11 @@ text-align: center;
 """
 st.markdown(footer,unsafe_allow_html=True)
 
-# import tensorflow as tf
-# from tensorflow import keras
-# from tensorflow.keras.models import load_model
-# from tensorflow.keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
-# from keras.preprocessing import image
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
+# from tf.keras.preprocessing import image
 import pandas as pd
 import numpy as np
 import matplotlib as plt
@@ -54,7 +54,7 @@ import seaborn as sn
 #warnings.filterwarnings("ignore")
 import base64
 
-from PIL import Image
+from PIL import Image, ImageOps
 import requests
 from io import BytesIO
 
@@ -66,8 +66,36 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-#model = load_model("/Users/hexuser/ECG/app/models/bestCNN2D.h5") 
+model = load_model("./bestCNN2D.h5") 
 
+
+def model_prediction(img):
+  #img = image.load_img(img_path, grayscale=True, target_size=(150,150)) #target_size=(28,28), grayscale=True
+  img=ImageOps.grayscale(img).resize((150,150))
+  plt.figure(figsize = (10,5))
+  plt.imshow(img)
+  img = np.array(img) #image.img_to_array(img)
+  img = img/255
+  img = np.reshape(img,(1,150,150,1))
+  img_pred = model.predict(img)  
+  img_label = np.argmax(img_pred, axis=1)
+
+  # print(img_label)
+  if img_label == 0:
+    print("The model predicted this ECG to be of a person with a normal heart")
+    s = "The model predicted this ECG to be of a person with a normal heart"
+  if img_label == 1:
+    print("The model predicted this ECG to be of a person having a Myocardial Infarction(heart attack).  ALERT!")
+    s = "The model predicted this ECG to be of a person having a Myocardial Infarction(heart attack)"
+
+  if img_label == 2:
+    print("The model predicted this ECG to be of a person with an abnormal heart beat.    ALERT!")
+    s = "The model predicted this ECG to be of a person with an abnormal heart beat.    ALERT!"
+  if img_label == 3:
+    print("The model predicted this ECG to be of a person with a history of Myocardial Infarction.   ALERT!")
+    s = "The model predicted this ECG to be of a person with a history of Myocardial Infarction.   ALERT!"
+  
+  return s
 
 # Showing the original raw data
 # if st.checkbox("Show Raw Data", False):
@@ -100,6 +128,7 @@ if st.sidebar.checkbox('Predict yourself (User Interactive)', True):
     st.markdown("Input an ECG image to the trained model to see the real-time predicted output. The images are pre-labelled and randomly selected from the repository.") 
     st.markdown("Additional feature under development: Input your own ECG image")
 
+    
     if st.button("Normal"):
         # img=Image.open("https://raw.githubusercontent.com/hardikroutray/ECG/main/CroppedECGImages_data_v2/Normal/Cropped_Images/Normal_1Cropped_lead4.png")
         num = np.random.randint(0,100)
@@ -108,7 +137,14 @@ if st.sidebar.checkbox('Predict yourself (User Interactive)', True):
         img = Image.open(BytesIO(response.content))
         st.image(img, width=700, caption="Normal ECG")
 
-        st.markdown("The model predicted this ECG to be of a person with a **normal** heart.")
+        su1=model_prediction(img)
+
+        print(su1)
+        st.markdown(str(su1))
+
+
+
+        #st.markdown("The model predicted this ECG to be of a person with a **normal** heart.")
 
 
     if st.button("Myocardial Infarction"):
@@ -116,9 +152,17 @@ if st.sidebar.checkbox('Predict yourself (User Interactive)', True):
         url = "https://raw.githubusercontent.com/hardikroutray/ECG/main/CroppedECGImages_data_v2/MI/Cropped_Images/MI_{}Cropped_lead4.png".format(num)
         response = requests.get(url)
         img = Image.open(BytesIO(response.content))
+
+
         st.image(img, width=700, caption="Myocardial Infarction ECG")
 
-        st.markdown("The model predicted this ECG to be of a person having a **heart attack**.")
+        su1=model_prediction(img)
+
+        print(su1)
+        st.markdown(str(su1))
+
+
+        #st.markdown("The model predicted this ECG to be of a person having a **heart attack**.")
 
     if st.button("Abnormal Heartbeat"):
         num = np.random.randint(0,100)
@@ -126,8 +170,15 @@ if st.sidebar.checkbox('Predict yourself (User Interactive)', True):
         response = requests.get(url)
         img = Image.open(BytesIO(response.content))
         st.image(img, width=700, caption="Abnormal Heartbeat ECG")
+        su1=model_prediction(img)
 
-        st.markdown("The model predicted this ECG to be of a person having a **abnormal heartbeat**.")
+        print(su1)
+        st.markdown(str(su1))
+
+
+
+
+        #st.markdown("The model predicted this ECG to be of a person having a **abnormal heartbeat**.")
 
 
     if st.button("History of Myocardial Infarction"):
@@ -137,7 +188,13 @@ if st.sidebar.checkbox('Predict yourself (User Interactive)', True):
         img = Image.open(BytesIO(response.content))
         st.image(img, width=700, caption="History of MI ECG")
 
-        st.markdown("The model predicted this ECG to be of a person having a **history of heart attack**.")
+        su1=model_prediction(img)
+
+        print(su1)
+        st.markdown(str(su1))
+
+
+        #st.markdown("The model predicted this ECG to be of a person having a **history of heart attack**.")
 
     st.markdown(
         "The data is publicly available **[here](https://doi.org/10.1016/j.dib.2021.106762)** under Creative Commons License. The 2D CNN notebook is hosted **[here](https://github.com/hardikroutray/ECG/blob/main/CNN2D_ECG.ipynb)**")
@@ -174,9 +231,8 @@ if st.sidebar.checkbox('Time Series (See Animation)', True):
         unsafe_allow_html=True,
         )
 
-    st.markdown("The 1D CNN notebook is hosted **[here](https://github.com/hardikroutray/ECG/blob/main/Multi_lead_1dCNN.ipynb)**")
 
-if st.sidebar.checkbox('2D CNN (Images)', False):
+if st.sidebar.checkbox('2D CNN', False):
 
     st.markdown("# Exploratory Visualization of 2D CNN Model")
 
@@ -198,14 +254,14 @@ if st.sidebar.checkbox('2D CNN (Images)', False):
     img = Image.open(BytesIO(response.content))
     st.image(img,width=500)
  
-    st.markdown("# Accuracy - 90%")
+    st.markdown("# Accuracy - 90.32 %")
 
     url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/Accuracy_2DCNN.png'
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
     st.image(img,width=600)
 
-    st.markdown("The model has an average overall accuracy of **90%** on the test set.")
+    st.markdown("The model has an overall accuracy of **90.32 %** on the test set.")
 
     st.markdown("# Confusion Matrix")
 
@@ -227,9 +283,9 @@ if st.sidebar.checkbox('2D CNN (Images)', False):
 
     st.markdown("The table shows the precision, recall, and f1 score for all the classes.") 
 
-    st.markdown("# Feature/Activation maps")
+    st.markdown("# Feature/Activation maps for each class")
 
-    st.markdown("As a sanity check that the CNN model is actually learning the ECG lineshape instead of the irrelevant image features, we trace back our steps and show the feature maps after each CNN layer. We do it for all the four representative images shown at the beginning of this page. One is shown below.") 
+    st.markdown("As a sanity check that the CNN model is actually learning the ECG lineshape instead of the irrelevant image features, we trace back our steps and show the feature maps after each CNN layer. We do it for the four representative images shown at the beginning of this page") 
 
     url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/CNN2D_Normal_featuremap.png'
     response = requests.get(url)
@@ -239,88 +295,29 @@ if st.sidebar.checkbox('2D CNN (Images)', False):
     st.markdown("The feature maps for the ECG of a person with a **normal** heart.")
 
 
-    # url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/CNN2D_MI_featuremap.png'
-    # response = requests.get(url)
-    # img = Image.open(BytesIO(response.content))
-    # st.image(img,width=800)
-
-    # st.markdown("The feature maps for the ECG of a person having a **heart attack**.")
-
-    # url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/CNN2D_HB_featuremap.png'
-    # response = requests.get(url)
-    # img = Image.open(BytesIO(response.content))
-    # st.image(img,width=800)
-
-    # st.markdown("The feature maps for the ECG of a person having an **abnormal heartbeat**.")
-
-
-    # url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/CNN2D_PMI_featuremap.png'
-    # response = requests.get(url)
-    # img = Image.open(BytesIO(response.content))
-    # st.image(img,width=800)
-
-    # st.markdown("The feature maps for the ECG of a person having a **history of MI**.") 
-
-
-if st.sidebar.checkbox('1D CNN (Time Series)', False):
-
-    st.markdown("# Exploratory Visualization of 1D CNN Model")
-
-#    st.markdown("Representative time series ECG images after processing for different classes of cardiological conditions")
-
-    url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/img1.png'
+    url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/CNN2D_MI_featuremap.png'
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
+    st.image(img,width=800)
 
-    st.image(img,caption="Overlay of ECG image line shape and post-processed time series extraction shape")
+    st.markdown("The feature maps for the ECG of a person having a **heart attack**.")
 
-    st.markdown("Contrary to using only images, converting the data to time series allows us to explore the ECGs of COVID patients. So all the five classes in the dataset are used for the 1D CNN analysis")
-
-    st.markdown("# Model Summary")
-    #model.summary()
-
-    url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/Model_sum_ati_1.png'
+    url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/CNN2D_HB_featuremap.png'
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
-    st.image(img,width=500)
- 
-    st.markdown("# Accuracy - 87%")
+    st.image(img,width=800)
 
-#    url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/conf_At_1.png'
-#    response = requests.get(url)
-#    img = Image.open(BytesIO(response.content))
-#    st.image(img,width=600)
+    st.markdown("The feature maps for the ECG of a person having an **abnormal heartbeat**.")
 
-    st.markdown("The model has an average overall accuracy of **87%** on the test set.")
 
-    st.markdown("# Confusion Matrix")
-
-    url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/conf_At_1.png'
+    url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/CNN2D_PMI_featuremap.png'
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
-    st.image(img,width=600)
+    st.image(img,width=800)
 
-# st.markdown('<p class="big-font">Hello World !!</p>', unsafe_allow_html=True)
-    st.markdown("The model also predicts MI ECG images with a whopping **100 %** accuracy.") 
-
-    st.markdown("# Score Table")
-
-    url = 'https://raw.githubusercontent.com/hardikroutray/ECG//main/app/images/Score_table_1.png'
-    response = requests.get(url)
-    img = Image.open(BytesIO(response.content))
-    st.image(img,width=600)
-
-    st.markdown("The table shows the precision, recall, and f1 score for all the classes.") 
+    st.markdown("The feature maps for the ECG of a person having a **history of MI**.") 
 
 
-if st.sidebar.checkbox('KNN (Time Series)', False):
-
-    st.markdown("# Under Development")
-
-if st.sidebar.checkbox('Random Forest (Time Series)', False):
-
-    st.markdown("# Under Development")
-
-if st.sidebar.checkbox('Miscellaneous', False):
+if st.sidebar.checkbox('1D CNN', False):
 
     st.markdown("# Under Development")
