@@ -1,0 +1,8 @@
+pandas
+ipywidgets
+seaborn
+matplotlib
+numpy
+streamlit
+requests
+tensorflow
